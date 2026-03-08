@@ -1,0 +1,43 @@
+{
+  "name": "lastfm-events-ical",
+  "version": "1.0.0",
+  "description": "Scrape a Last.fm user's events page and expose upcoming events as an iCalendar feed over HTTP.",
+  "main": "dist/index.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "npm run build:scraper && tsc",
+    "build:scraper": "npm run build --prefix packages/lastfm-scraper",
+    "postinstall": "cd packages/lastfm-scraper && npm install && npm run build",
+    "start": "node dist/index.js",
+    "dev": "NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "lastfm",
+    "events",
+    "ical",
+    "calendar",
+    "scraper",
+    "typescript",
+    "node"
+  ],
+  "author": "András Pozsgai <contact@justandras.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "ics": "^3.8.1",
+    "lastfm-events-scraper": "file:packages/lastfm-scraper",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0",
+    "@types/node": "^25.3.5",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  },
+  "overrides": {
+    "esbuild": ">=0.25.0"
+  }
+}

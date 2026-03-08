@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-npm:
+    name: Publish to GitHub Packages
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          registry-url: "https://npm.pkg.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish lastfm-events-scraper
+        working-directory: packages/lastfm-scraper
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SCOPE="${{ github.repository_owner }}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          npm pkg set "name=@${SCOPE}/lastfm-events-scraper"
+          npm pkg set "version=${VERSION}"
+          npm pkg set "publishConfig.registry=https://npm.pkg.github.com/"
+          npm pkg set "repository.url=github:${{ github.repository }}"
+          npm publish --access public
+
+      - name: Publish lastfm-events-ical
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SCOPE="${{ github.repository_owner }}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          npm pkg set "name=@${SCOPE}/lastfm-events-ical"
+          npm pkg set "version=${VERSION}"
+          npm pkg delete dependencies.lastfm-events-scraper
+          npm pkg set "dependencies.@${SCOPE}/lastfm-events-scraper=^${VERSION}"
+          npm pkg set "publishConfig.registry=https://npm.pkg.github.com/"
+          npm pkg set "repository.url=github:${{ github.repository }}"
+          npm publish --access public
+
+  publish-docker:
+    name: Build and push Docker image
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

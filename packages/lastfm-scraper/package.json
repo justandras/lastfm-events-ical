@@ -1,0 +1,22 @@
+{
+  "name": "lastfm-events-scraper",
+  "version": "1.0.0",
+  "description": "Reusable Last.fm user events scraper. Fetches and parses event list and detail pages.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["lastfm", "scraper", "events"],
+  "author": "András Pozsgai <contact@justandras.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^1.0.0",
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  }
+}

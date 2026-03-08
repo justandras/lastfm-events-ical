@@ -1,0 +1,4 @@
+# To install packages from GitHub Package Registry, create .npmrc with:
+# Replace OWNER with your GitHub username or org (e.g. myuser or myorg)
+# @OWNER:registry=https://npm.pkg.github.com/
+# //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN_OR_PAT

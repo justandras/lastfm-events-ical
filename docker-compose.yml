@@ -1,0 +1,37 @@
+services:
+  lastfm-events-ical:
+    build: .
+    image: lastfm-events-ical:latest
+    container_name: lastfm-events-ical
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - lastfm-events-cache:/data
+    environment:
+      # Required: contact email included in the User-Agent when scraping Last.fm
+      CONTACT_EMAIL: you@example.com
+
+      # Last.fm username whose events are exposed in the calendar feed
+      LASTFM_USERNAME: your-lastfm-username
+
+      # HTTP port inside the container (default 3000)
+      PORT: "3000"
+
+      # Path to the JSON cache file (must match the volume mount path)
+      CACHE_FILE_PATH: /data/events-cache.json
+
+      # Set to 1 or true to scrape on every calendar request (for development)
+      # When unset: serve from cache and scrape in background every 3–6 hours
+      # LIVE_DATA: "0"
+
+      # Optional: override the User-Agent; email is always appended
+      # LASTFM_SCRAPER_UA: lastfm-events-ical/1.0
+
+      # Optional: log level (default info)
+      # LOG_LEVEL: info
+
+      NODE_ENV: production
+
+volumes:
+  lastfm-events-cache:
