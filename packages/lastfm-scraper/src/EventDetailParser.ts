@@ -105,6 +105,7 @@ export class EventDetailParser {
 			else if (ampm === 'am' && hour === 12) hour = 0
 		}
 
+		// Last.fm renders these dates in the viewer's locale; treat them as local time.
 		const date = new Date(year, month - 1, day, hour, minute)
 		return Number.isNaN(date.getTime()) ? undefined : date
 	}
@@ -131,7 +132,7 @@ export class EventDetailParser {
 			''
 		const country = $('[itemprop="addressCountry"]').first().text().trim() || ''
 		const description =
-			$('[itemprop="description"]').first().text().trim() || $('meta[name="description"]').attr('content')?.trim() || ''
+			this.extractMultilineDescription($) || $('meta[name="description"]').attr('content')?.trim() || ''
 
 		const locationParts: string[] = []
 		if (city) locationParts.push(city)
@@ -139,6 +140,35 @@ export class EventDetailParser {
 		const location = [venue, locationParts.join(', ')].filter(Boolean).join(' – ')
 
 		return { venue: this.trimLocation(venue), city, country, location: this.trimLocation(location), description }
+	}
+
+	private extractMultilineDescription($: cheerio.CheerioAPI): string {
+		const desc = $('[itemprop="description"]').first()
+		if (!desc.length) return ''
+
+		const html = desc.html() ?? ''
+		if (!html.trim()) return this.normalizeDescription(desc.text())
+
+		// Convert <br> to line breaks and paragraph boundaries to blank lines, then strip remaining tags.
+		const withLineBreaks = html
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+			.replace(/<\/p>/gi, '\n\n')
+
+		// Strip remaining tags but keep our injected newlines, then decode entities via cheerio.
+		const noTags = withLineBreaks.replace(/<[^>]+>/g, '')
+		const decoded = cheerio.load(`<div>${noTags}</div>`).text()
+		const normalized = this.normalizeDescription(decoded)
+		return normalized
+	}
+
+	private normalizeDescription(descriptionText: string): string {
+		// For descriptions we preserve line breaks and spacing as much as possible.
+		// We only normalize CRLF and collapse excessive blank lines.
+		return descriptionText
+			.replace(/\r/g, '')
+			.replace(/\n{3,}/g, '\n\n')
+			.trim()
 	}
 
 	private trimLocation(locationString: string): string {

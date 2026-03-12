@@ -80,6 +80,23 @@ describe("EventDetailParser", () => {
     expect(event!.location).toContain("Netherlands");
   });
 
+  it("preserves line breaks in description (<br> and <p>)", () => {
+    const html = `
+      <html><body>
+        <h1>Gig</h1>
+        <div itemprop="description">
+          <p>Timetable<br>6:30 PM - Doors open<br>8:00 PM - Show starts</p>
+          <p>Second paragraph here.</p>
+        </div>
+      </body></html>
+    `;
+    const event = parser.parse(html, pageUrl);
+    expect(event).not.toBeNull();
+    expect(event!.description).toBe(
+      "Timetable\n6:30 PM - Doors open\n8:00 PM - Show starts\n\nSecond paragraph here."
+    );
+  });
+
   it("extracts event id from URL path", () => {
     const urlWithSlug = "https://www.last.fm/event/12345+Artist+Venue";
     const html = "<html><body><h1>E</h1></body></html>";

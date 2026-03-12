@@ -3,7 +3,10 @@ import { IcalFeedBuilder } from "../src/IcalFeedBuilder";
 import { ILastFmEvent } from "../src/ILastFmEvent";
 
 describe("IcalFeedBuilder", () => {
-  const builder = new IcalFeedBuilder();
+  const builder = new IcalFeedBuilder({
+    timeZone: "Europe/Berlin",
+    now: new Date(2026, 0, 1, 0, 0, 0),
+  });
 
   it("builds ICS with no VEVENT when no events have start date", () => {
     const events: ILastFmEvent[] = [
@@ -28,6 +31,12 @@ describe("IcalFeedBuilder", () => {
     expect(ics).toContain("BEGIN:VCALENDAR");
     expect(ics).toContain("END:VCALENDAR");
     expect(ics).toContain("BEGIN:VEVENT");
+    expect(ics).toContain("X-WR-TIMEZONE:Europe/Berlin");
+    expect(ics).toContain("BEGIN:VTIMEZONE");
+    expect(ics).toContain("TZID:Europe/Berlin");
+    expect(ics).toContain("BEGIN:STANDARD");
+    // VTIMEZONE transition times should not have random seconds.
+    expect(ics).toMatch(/DTSTART:\d{8}T\d{4}00/);
     expect(ics).toContain("LASTFM-ICAL-12345");
     expect(ics).toContain("Concert");
     expect(ics).toContain("https://www.last.fm/event/12345+Slug");
@@ -66,7 +75,8 @@ describe("IcalFeedBuilder", () => {
     const ics = builder.build(events);
     expect(ics).toContain("A great night");
     expect(ics).toContain("Venue");
-    expect(ics).toContain("Last.fm event:");
+    // First line of DESCRIPTION is the event URL.
+    expect(ics).toContain("DESCRIPTION:https://www.last.fm/event/1");
   });
 
   it("uses custom calendar name", () => {
