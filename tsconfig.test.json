@@ -5,7 +5,8 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "lastfm-events-scraper": ["packages/lastfm-scraper/src/index.ts"]
     }
   },
   "include": ["tests", "src", "vitest.config.ts"]

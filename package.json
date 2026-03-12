@@ -11,7 +11,7 @@
     "build:scraper": "npm run build --prefix packages/lastfm-scraper",
     "postinstall": "cd packages/lastfm-scraper && npm install && npm run build",
     "start": "node dist/index.js",
-    "dev": "NODE_ENV=development ts-node-dev --respawn --transpile-only -r tsconfig-paths/register --watch packages/lastfm-scraper/src src/index.ts",
+    "dev": "TS_NODE_PROJECT=tsconfig.test.json NODE_ENV=development ts-node-dev --respawn --transpile-only -r tsconfig-paths/register --watch packages/lastfm-scraper/src src/index.ts",
     "dev:app": "NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -7,8 +7,7 @@
     "rootDir": "src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "lastfm-events-scraper": ["packages/lastfm-scraper/src/index.ts"]
+      "@/*": ["src/*"]
     },
     "strict": true,
     "esModuleInterop": true,
