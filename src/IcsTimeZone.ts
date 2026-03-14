@@ -134,6 +134,7 @@ export class IcsTimeZone {
 				const offsetTo = this.getOffsetMinutes(after, tzid)
 				const isDaylight = offsetTo > offsetFrom
 				const localStart = IcsTimeZone.formatLocalDateTime(after, tzid)
+
 				transitions.push({ localStart, offsetFrom, offsetTo, isDaylight })
 			}
 
