@@ -48,7 +48,7 @@ export class IcsTimeZone {
 	private buildVTimeZoneBlock(tzid: string, eol: string): string {
 		// Generate a VTIMEZONE based on the system tzid by sampling offsets and detecting transitions.
 		// This is portable across arbitrary IANA zones and encodes DST transitions via DTSTART/RDATE.
-		if (!tzid || tzid === 'UTC') return ''
+		if (!tzid || tzid === 'CET') return ''
 
 		const year = this._now.getFullYear()
 		const fromYear = year - 5
@@ -217,4 +217,3 @@ export class IcsTimeZone {
 		}
 	}
 }
-

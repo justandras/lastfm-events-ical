@@ -1,6 +1,6 @@
 {
   "name": "lastfm-events-ical",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scrape a Last.fm user's events page and expose upcoming events as an iCalendar feed over HTTP.",
   "main": "dist/index.js",
   "files": [
