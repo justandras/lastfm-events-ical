@@ -80,25 +80,44 @@ describe("EventDetailParser", () => {
     expect(event!.location).toContain("Netherlands");
   });
 
-  it("removes 'Web' and 'Show on map' lines from location", () => {
+  it("parses Last.fm-style location section (Place name, address, Web, Show on map)", () => {
+    // Mirrors current event detail markup: section[itemprop=location], not a flat span.
     const html = `
       <html><body>
         <h1>Gig</h1>
-        <span itemprop="location">
-          Club Circle
-          <br />
-          Web: https://www.club-circle.at/
-          <br />
-          Show on map – Graz, Austria
-        </span>
-        <span itemprop="addressLocality">Graz</span>
-        <span itemprop="addressCountry">Austria</span>
+        <section class="event-detail" itemprop="location" itemscope itemtype="http://schema.org/Place">
+          <h3 class="event-detail-heading-location">Location</h3>
+          <p class="event-detail-address">
+            <strong itemprop="name">Circle Thalia</strong>
+            <br>
+            <span itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+              <span itemprop="streetAddress">Opernring 5a</span>,
+              <span itemprop="addressLocality">Graz</span>,
+              <span itemprop="postalCode">8010</span>,
+              <span itemprop="addressCountry">Austria</span>
+            </span>
+          </p>
+          <p class="event-detail-web">
+            Web: <a itemprop="url" href="https://www.club-circle.at/" target="_blank" rel="nofollow">https://www.club-circle.at/</a>
+          </p>
+          <p>
+            <a itemprop="hasMap" href="http://maps.google.com/?q=Circle%20Thalia" target="_blank" rel="nofollow">
+              Show on map
+            </a>
+          </p>
+        </section>
       </body></html>
     `;
     const event = parser.parse(html, pageUrl);
     expect(event).not.toBeNull();
-    expect(event!.venue).toBe("Club Circle");
-    expect(event!.location).toBe("Club Circle – Graz, Austria");
+    expect(event!.venue).toBe("Circle Thalia");
+    expect(event!.city).toBe("Graz");
+    expect(event!.country).toBe("Austria");
+    expect(event!.location).toBe(
+      "Circle Thalia – Opernring 5a, Graz, 8010, Austria"
+    );
+    expect(event!.location!.toLowerCase()).not.toContain("show on map");
+    expect(event!.location).not.toMatch(/Web:/i);
     expect(event!.venueWebsite).toBe("https://www.club-circle.at/");
   });
 

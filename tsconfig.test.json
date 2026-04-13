@@ -9,5 +9,11 @@
       "lastfm-events-scraper": ["packages/lastfm-scraper/src/index.ts"]
     }
   },
-  "include": ["tests", "src", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "packages/lastfm-scraper/src/**/*.ts",
+    "packages/lastfm-scraper/tests/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

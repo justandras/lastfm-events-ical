@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { Element } from 'domhandler'
 import { LastFmEvent } from './LastFmEvent'
 
 /** Regex for human-readable date/time (e.g. "14 March 2026 at 6:30pm"). */
@@ -120,7 +121,9 @@ export class EventDetailParser {
 		description: string
 	} {
 		const locationEl = $('[itemprop="location"]').first()
+		const venueFromPlaceName = locationEl.find('[itemprop="name"]').first().text().trim()
 		const venue =
+			venueFromPlaceName ||
 			locationEl.text().trim() ||
 			$('a[href*="/venue/"]').first().text().trim() ||
 			$('p:contains("Venue")')
@@ -129,18 +132,28 @@ export class EventDetailParser {
 				.replace(/Venue[:\s]*/i, '')
 				.trim() ||
 			''
+		const addressEl = locationEl.find('[itemprop="address"]').first()
 		const city =
+			(addressEl.length ? addressEl.find('[itemprop="addressLocality"]').first().text().trim() : '') ||
 			$('[itemprop="addressLocality"]').first().text().trim() ||
 			$('span[class*="location"]').first().text().trim() ||
 			''
-		const country = $('[itemprop="addressCountry"]').first().text().trim() || ''
+		const country =
+			(addressEl.length ? addressEl.find('[itemprop="addressCountry"]').first().text().trim() : '') ||
+			$('[itemprop="addressCountry"]').first().text().trim() ||
+			''
 		const venueWebsite = this.extractVenueWebsite(locationEl)
-		const description = this.extractMultilineDescription($) || $('meta[name="description"]').attr('content')?.trim() || ''
+		const description =
+			this.extractMultilineDescription($) || $('meta[name="description"]').attr('content')?.trim() || ''
 
+		const postalLine = this.formatPostalAddressLine(addressEl)
 		const locationParts: string[] = []
 		if (city) locationParts.push(city)
 		if (country) locationParts.push(country)
-		const location = [venue, locationParts.join(', ')].filter(Boolean).join(' – ')
+		const fallbackRegion = locationParts.join(', ')
+		const location = postalLine
+			? [venue, postalLine].filter(Boolean).join(' – ')
+			: [venue, fallbackRegion].filter(Boolean).join(' – ')
 
 		return {
 			venue: this.trimLocation(venue),
@@ -152,7 +165,18 @@ export class EventDetailParser {
 		}
 	}
 
-	private extractVenueWebsite(locationEl: cheerio.Cheerio<cheerio.AnyNode>): string {
+	/** Single-line postal address in Last.fm order: street, locality, postal code, country. */
+	private formatPostalAddressLine(addressEl: cheerio.Cheerio<Element>): string {
+		if (!addressEl?.length) return ''
+		const street = addressEl.find('[itemprop="streetAddress"]').first().text().trim()
+		const locality = addressEl.find('[itemprop="addressLocality"]').first().text().trim()
+		const postal = addressEl.find('[itemprop="postalCode"]').first().text().trim()
+		const addrCountry = addressEl.find('[itemprop="addressCountry"]').first().text().trim()
+		const parts = [street, locality, postal, addrCountry].filter(Boolean)
+		return parts.join(', ')
+	}
+
+	private extractVenueWebsite(locationEl: cheerio.Cheerio<Element>): string {
 		if (!locationEl?.length) return ''
 
 		// Prefer explicit anchor links if present.
@@ -208,6 +232,7 @@ export class EventDetailParser {
 			.replace(/^Location\s*/i, '') // remove "Location" at the start
 			.replace(/^\s*Web:\s*https?:\/\/\S+\s*$/gim, '') // drop "Web: <url>" lines
 			.replace(/^\s*Show on map\s*[–-].*$/gim, '') // drop "Show on map – ..." lines
+			.replace(/^\s*Show on map\s*$/gim, '') // drop standalone "Show on map" (maps link text)
 			.replace(/\r/g, '')
 			.replace(/[ \t]+/g, ' ') // collapse spaces/tabs
 			.replace(/ *\n */g, '\n') // trim spaces around line breaks
