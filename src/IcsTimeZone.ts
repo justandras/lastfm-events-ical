@@ -24,8 +24,13 @@ export class IcsTimeZone {
 		// Keep line endings consistent with the `ics` library output.
 		const eol = ics.includes('\r\n') ? '\r\n' : '\n'
 
-		// 1) Add TZID on DTSTART lines (local timestamps, no trailing Z).
-		const withTzidOnDtStart = ics.replace(/(^|\r?\n)DTSTART:/g, `$1DTSTART;TZID=${tzid}:`)
+		// For UTC-like zones, do not rewrite DTSTART to TZID form.
+		// UTC is best represented as DTSTART:...Z (not DTSTART;TZID=UTC:...).
+		const isUtcLike = IcsTimeZone.isUtcLikeTzid(tzid)
+		const withTzidOnDtStart = isUtcLike
+			? ics
+			: // 1) Add TZID on DTSTART lines (local timestamps, no trailing Z).
+				ics.replace(/(^|\r?\n)DTSTART:/g, `$1DTSTART;TZID=${tzid}:`)
 
 		// 2) Add X-WR-TIMEZONE + VTIMEZONE block once per calendar.
 		const vtimezone = this.buildVTimeZoneBlock(tzid, eol)
@@ -48,7 +53,7 @@ export class IcsTimeZone {
 	private buildVTimeZoneBlock(tzid: string, eol: string): string {
 		// Generate a VTIMEZONE based on the system tzid by sampling offsets and detecting transitions.
 		// This is portable across arbitrary IANA zones and encodes DST transitions via DTSTART/RDATE.
-		if (!tzid || tzid === 'CET') return ''
+		if (!tzid || IcsTimeZone.isUtcLikeTzid(tzid)) return ''
 
 		const year = this._now.getFullYear()
 		const fromYear = year - 5
@@ -161,9 +166,37 @@ export class IcsTimeZone {
 	}
 
 	private getOffsetMinutes(dateUtc: Date, tzid: string): number {
+		// Prefer parsing a GMT offset directly to avoid edge cases like hour=24 formatting.
+		const parsed = IcsTimeZone.tryGetOffsetMinutesFromShortOffset(dateUtc, tzid)
+		if (parsed !== null) return parsed
+
 		const parts = IcsTimeZone.getDateTimeParts(dateUtc, tzid)
 		const asUtcMs = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
 		return Math.round((asUtcMs - dateUtc.getTime()) / 60000)
+	}
+
+	private static tryGetOffsetMinutesFromShortOffset(dateUtc: Date, tzid: string): number | null {
+		try {
+			const dtf = new Intl.DateTimeFormat('en-US', {
+				timeZone: tzid,
+				timeZoneName: 'shortOffset',
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false,
+			})
+			const parts = dtf.formatToParts(dateUtc)
+			const tzName = parts.find((p) => p.type === 'timeZoneName')?.value ?? ''
+			// Common forms: "GMT+2", "GMT+02:00", "UTC+1"
+			const m = tzName.match(/(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?/)
+			if (!m) return null
+			const sign = m[1] === '-' ? -1 : 1
+			const hh = Number.parseInt(m[2], 10)
+			const mm = m[3] ? Number.parseInt(m[3], 10) : 0
+			if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null
+			return sign * (hh * 60 + mm)
+		} catch {
+			return null
+		}
 	}
 
 	private static getDateTimeParts(
@@ -216,5 +249,19 @@ export class IcsTimeZone {
 		} catch {
 			return 'UTC'
 		}
+	}
+
+	private static isUtcLikeTzid(tzid: string): boolean {
+		const t = (tzid || '').trim()
+		return (
+			t === 'UTC' ||
+			t === 'Etc/UTC' ||
+			t === 'Etc/GMT' ||
+			t === 'GMT' ||
+			t === 'GMT0' ||
+			t === 'Etc/GMT0' ||
+			t === 'Etc/Universal' ||
+			t === 'Etc/Zulu'
+		)
 	}
 }
