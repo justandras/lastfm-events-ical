@@ -13,6 +13,8 @@ export class LastFmEvent {
   public readonly startsAt?: Date;
   /** Venue name when known. */
   public readonly venue?: string;
+  /** Venue website URL when present on the event page. */
+  public readonly venueWebsite?: string;
   /** City when known. */
   public readonly city?: string;
   /** Country when known. */
@@ -32,6 +34,7 @@ export class LastFmEvent {
     url: string;
     startsAt?: Date;
     venue?: string;
+    venueWebsite?: string;
     city?: string;
     country?: string;
     location?: string;
@@ -42,6 +45,7 @@ export class LastFmEvent {
     this.url = args.url;
     this.startsAt = args.startsAt;
     this.venue = args.venue;
+    this.venueWebsite = args.venueWebsite;
     this.city = args.city;
     this.country = args.country;
     this.location = args.location;

@@ -80,6 +80,28 @@ describe("EventDetailParser", () => {
     expect(event!.location).toContain("Netherlands");
   });
 
+  it("removes 'Web' and 'Show on map' lines from location", () => {
+    const html = `
+      <html><body>
+        <h1>Gig</h1>
+        <span itemprop="location">
+          Club Circle
+          <br />
+          Web: https://www.club-circle.at/
+          <br />
+          Show on map – Graz, Austria
+        </span>
+        <span itemprop="addressLocality">Graz</span>
+        <span itemprop="addressCountry">Austria</span>
+      </body></html>
+    `;
+    const event = parser.parse(html, pageUrl);
+    expect(event).not.toBeNull();
+    expect(event!.venue).toBe("Club Circle");
+    expect(event!.location).toBe("Club Circle – Graz, Austria");
+    expect(event!.venueWebsite).toBe("https://www.club-circle.at/");
+  });
+
   it("preserves line breaks in description (<br> and <p>)", () => {
     const html = `
       <html><body>

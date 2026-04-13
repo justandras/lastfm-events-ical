@@ -47,8 +47,10 @@ export class IcalFeedBuilder {
 		]
 
 		const safeUrl = this.safeEventUrl(event.url)
+		const safeVenueWebsite = this.safeVenueWebsite(event.venueWebsite)
 		const descriptionLines: string[] = []
 		if (safeUrl) descriptionLines.push(`${safeUrl}`)
+		if (safeUrl && safeVenueWebsite) descriptionLines.push(`Venue: ${safeVenueWebsite}`)
 		if (event.description) {
 			descriptionLines.push('', this.truncate(event.description, MAX_DESCRIPTION_LEN))
 		}
@@ -74,5 +76,15 @@ export class IcalFeedBuilder {
 
 	private safeEventUrl(url: string): string {
 		return LastFmHtmlFetcher.isAllowedUrl(url) ? url : ''
+	}
+
+	private safeVenueWebsite(url: string | undefined): string {
+		if (!url) return ''
+		try {
+			const parsed = new URL(url)
+			return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : ''
+		} catch {
+			return ''
+		}
 	}
 }

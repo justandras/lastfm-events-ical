@@ -35,7 +35,7 @@ export class EventDetailParser {
 		if (!title) return null
 
 		const startsAt = this.parseStartDate($)
-		const { venue, city, country, location, description } = this.parseLocationAndDescription($)
+		const { venue, venueWebsite, city, country, location, description } = this.parseLocationAndDescription($)
 
 		const id = this.extractEventIdFromUrl(pageUrl)
 
@@ -45,6 +45,7 @@ export class EventDetailParser {
 			url: pageUrl,
 			startsAt,
 			venue: venue || undefined,
+			venueWebsite: venueWebsite || undefined,
 			city: city || undefined,
 			country: country || undefined,
 			location: location || undefined,
@@ -112,13 +113,15 @@ export class EventDetailParser {
 
 	private parseLocationAndDescription($: cheerio.CheerioAPI): {
 		venue: string
+		venueWebsite: string
 		city: string
 		country: string
 		location: string
 		description: string
 	} {
+		const locationEl = $('[itemprop="location"]').first()
 		const venue =
-			$('[itemprop="location"]').first().text().trim() ||
+			locationEl.text().trim() ||
 			$('a[href*="/venue/"]').first().text().trim() ||
 			$('p:contains("Venue")')
 				.first()
@@ -131,15 +134,44 @@ export class EventDetailParser {
 			$('span[class*="location"]').first().text().trim() ||
 			''
 		const country = $('[itemprop="addressCountry"]').first().text().trim() || ''
-		const description =
-			this.extractMultilineDescription($) || $('meta[name="description"]').attr('content')?.trim() || ''
+		const venueWebsite = this.extractVenueWebsite(locationEl)
+		const description = this.extractMultilineDescription($) || $('meta[name="description"]').attr('content')?.trim() || ''
 
 		const locationParts: string[] = []
 		if (city) locationParts.push(city)
 		if (country) locationParts.push(country)
 		const location = [venue, locationParts.join(', ')].filter(Boolean).join(' – ')
 
-		return { venue: this.trimLocation(venue), city, country, location: this.trimLocation(location), description }
+		return {
+			venue: this.trimLocation(venue),
+			venueWebsite,
+			city,
+			country,
+			location: this.trimLocation(location),
+			description,
+		}
+	}
+
+	private extractVenueWebsite(locationEl: cheerio.Cheerio<cheerio.AnyNode>): string {
+		if (!locationEl?.length) return ''
+
+		// Prefer explicit anchor links if present.
+		const hrefCandidate = locationEl
+			.find('a[href^="http://"], a[href^="https://"]')
+			.toArray()
+			.map((el) => locationEl.find(el).attr('href')?.trim() || '')
+			.find((href) => href && !/last\.fm/i.test(href) && !/google\./i.test(href))
+
+		if (hrefCandidate) return this.normalizeWebsiteUrl(hrefCandidate)
+
+		// Fallback: parse "Web: https://..." lines from the raw text.
+		const text = locationEl.text().replace(/\r/g, '')
+		const match = text.match(/^\s*Web:\s*(https?:\/\/\S+)\s*$/im)
+		return match?.[1] ? this.normalizeWebsiteUrl(match[1]) : ''
+	}
+
+	private normalizeWebsiteUrl(url: string): string {
+		return url.trim().replace(/[),.]+$/g, '')
 	}
 
 	private extractMultilineDescription($: cheerio.CheerioAPI): string {
@@ -174,6 +206,8 @@ export class EventDetailParser {
 	private trimLocation(locationString: string): string {
 		return locationString
 			.replace(/^Location\s*/i, '') // remove "Location" at the start
+			.replace(/^\s*Web:\s*https?:\/\/\S+\s*$/gim, '') // drop "Web: <url>" lines
+			.replace(/^\s*Show on map\s*[–-].*$/gim, '') // drop "Show on map – ..." lines
 			.replace(/\r/g, '')
 			.replace(/[ \t]+/g, ' ') // collapse spaces/tabs
 			.replace(/ *\n */g, '\n') // trim spaces around line breaks

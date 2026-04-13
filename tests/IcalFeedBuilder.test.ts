@@ -68,6 +68,7 @@ describe("IcalFeedBuilder", () => {
         title: "Gig",
         url: "https://www.last.fm/event/1",
         startsAt: new Date(2026, 2, 10, 19, 0),
+        venueWebsite: "https://www.club-circle.at/",
         description: "A great night",
         location: "Venue – City, Country",
       },
@@ -77,6 +78,7 @@ describe("IcalFeedBuilder", () => {
     expect(ics).toContain("Venue");
     // First line of DESCRIPTION is the event URL.
     expect(ics).toContain("DESCRIPTION:https://www.last.fm/event/1");
+    expect(ics).toContain("Venue: https://www.club-circle.at/");
   });
 
   it("uses custom calendar name", () => {

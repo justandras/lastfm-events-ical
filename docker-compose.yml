@@ -31,6 +31,9 @@ services:
       # Optional: log level (default info)
       # LOG_LEVEL: info
 
+      # Recommended: set container timezone explicitly (IANA TZID).
+      TZ: Europe/Vienna
+
       NODE_ENV: production
 
 volumes:
