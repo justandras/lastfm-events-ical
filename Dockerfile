@@ -13,6 +13,8 @@ FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
+RUN apk add --no-cache tzdata
+
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV CACHE_FILE_PATH=/data/events-cache.json
