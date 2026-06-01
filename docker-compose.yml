@@ -31,6 +31,9 @@ services:
       # Optional: log level (default info)
       # LOG_LEVEL: info
 
+      # Optional: Bandsintown feeds at /{slug}.ics (JSON array; app_id is per artist)
+      # BANDSINTOWN_ARTISTS: '[{"slug":"desired-slug","artist":"artist name from api url","appId":"your app ID"}]'
+
       # Recommended: set container timezone explicitly (IANA TZID).
       TZ: Europe/Vienna
 

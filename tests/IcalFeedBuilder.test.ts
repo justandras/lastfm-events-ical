@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { IcalFeedBuilder } from "../src/IcalFeedBuilder";
 import { ILastFmEvent } from "../src/ILastFmEvent";
+import { BandsintownJsonFetcher } from "bandsintown-events-client";
 
 describe("IcalFeedBuilder", () => {
   const builder = new IcalFeedBuilder({
@@ -105,5 +106,25 @@ describe("IcalFeedBuilder", () => {
     ];
     const ics = builder.build(events);
     expect(ics).not.toContain("evil.com");
+  });
+
+  it("uses custom uid prefix and allowlist for Bandsintown feeds", () => {
+    const events: ILastFmEvent[] = [
+      {
+        id: "12345",
+        title: "Example Event Title",
+        url: "https://www.bandsintown.com/e/12345",
+        startsAt: new Date(2026, 5, 3, 22, 0),
+      },
+    ];
+    const ics = builder.build(events, "artist name from api url Events", {
+      uidPrefix: "BANDSINTOWN-ICAL",
+      stableEventIds: false,
+      isAllowedEventUrl: BandsintownJsonFetcher.isAllowedUrl,
+      productId: "bandsintown-events-ical",
+    });
+    expect(ics).toContain("BANDSINTOWN-ICAL-12345");
+    expect(ics).toContain("https://www.bandsintown.com/e/12345");
+    expect(ics).not.toContain("LASTFM-ICAL");
   });
 });

@@ -18,6 +18,17 @@ The iCal entries include:
 - **`PORT`**: HTTP port (default `3000`).
 - **`LASTFM_SCRAPER_UA`**: Optional override for the User-Agent; if unset, the default uses `CONTACT_EMAIL`.
 - **`CACHE_FILE_PATH`**: Path to the JSON cache file. Defaults to `/data/events-cache.json`.
+- **`BANDSINTOWN_ARTISTS`**: Optional JSON array of Bandsintown feeds. Each entry needs `slug` (ICS URL path), `artist` (Bandsintown artist name), and `appId` (per-artist API key from Bandsintown). Example: `[{"slug":"desired-slug","artist":"artist name from api url","appId":"your app ID"}]`. Feeds are fetched live on each request (no cache). Treat `appId` as a credential.
+
+### Bandsintown calendars
+
+When `BANDSINTOWN_ARTISTS` is set, each artist is available at:
+
+```text
+http://localhost:3000/{slug}.ics
+```
+
+For example, `slug: "desired-slug"` serves `http://localhost:3000/desired-slug.ics`. Last.fm remains at `/calendar.ics`.
 
 ### Running locally
 
@@ -71,4 +82,3 @@ docker run --rm -p 3000:3000 \
 
 Then subscribe to: `http://localhost:3000/calendar.ics`
 from your calendar application.
-

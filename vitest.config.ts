@@ -7,6 +7,7 @@ export default defineConfig({
     include: [
       "tests/**/*.test.ts",
       "packages/lastfm-scraper/tests/**/*.test.ts",
+      "packages/bandsintown-client/tests/**/*.test.ts",
     ],
     globals: true,
   },
@@ -16,6 +17,10 @@ export default defineConfig({
       "lastfm-events-scraper": path.resolve(
         __dirname,
         "packages/lastfm-scraper/src/index.ts"
+      ),
+      "bandsintown-events-client": path.resolve(
+        __dirname,
+        "packages/bandsintown-client/src/index.ts"
       ),
     },
   },

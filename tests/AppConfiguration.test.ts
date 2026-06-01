@@ -77,4 +77,22 @@ describe("AppConfiguration", () => {
     expect(config.cacheFilePath).toBe("/tmp/cache.json");
     expect(config.baseUserAgent).toBe("MyBot/1.0");
   });
+
+  it("loads BANDSINTOWN_ARTISTS", () => {
+    process.env.CONTACT_EMAIL = "a@b.co";
+    process.env.BANDSINTOWN_ARTISTS =
+      '[{"slug":"desired-slug","artist":"artist name from api url","appId":"your app ID"}]';
+    const config = AppConfiguration.load();
+    expect(config.bandsintownArtists).toHaveLength(1);
+    expect(config.getBandsintownArtistBySlug("desired-slug")?.artist).toBe(
+      "artist name from api url"
+    );
+    expect(config.getBandsintownArtistBySlug("missing")).toBeUndefined();
+  });
+
+  it("throws when BANDSINTOWN_ARTISTS is invalid", () => {
+    process.env.CONTACT_EMAIL = "a@b.co";
+    process.env.BANDSINTOWN_ARTISTS = "not-json";
+    expect(() => AppConfiguration.load()).toThrow(/BANDSINTOWN_ARTISTS/);
+  });
 });

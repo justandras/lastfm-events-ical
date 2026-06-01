@@ -25,6 +25,7 @@ RUN npm install --omit=dev --ignore-scripts
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/packages/lastfm-scraper/dist ./packages/lastfm-scraper/dist
+COPY --from=build /app/packages/bandsintown-client/dist ./packages/bandsintown-client/dist
 
 # Directory for persistent cache; mount this as a volume when running.
 VOLUME ["/data"]

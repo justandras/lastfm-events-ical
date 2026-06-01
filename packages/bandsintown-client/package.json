@@ -1,0 +1,24 @@
+{
+  "name": "bandsintown-events-client",
+  "version": "1.0.0",
+  "description": "Fetches artist events from the Bandsintown public REST API.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "bandsintown",
+    "events",
+    "api"
+  ],
+  "author": "András Pozsgai <contact@justandras.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  }
+}

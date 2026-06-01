@@ -1,6 +1,11 @@
+import {
+  BandsintownArtistConfig,
+  parseBandsintownArtists,
+} from "./BandsintownArtistConfig";
+
 /**
  * Application configuration loaded from environment variables.
- * Required: CONTACT_EMAIL. Optional: PORT, LASTFM_USERNAME, CACHE_FILE_PATH, LIVE_DATA, LASTFM_SCRAPER_UA.
+ * Required: CONTACT_EMAIL. Optional: PORT, LASTFM_USERNAME, CACHE_FILE_PATH, LIVE_DATA, LASTFM_SCRAPER_UA, BANDSINTOWN_ARTISTS.
  * User-Agent for scraping is built by the fetcher library from contact email and optional base.
  */
 export class AppConfiguration {
@@ -10,6 +15,8 @@ export class AppConfiguration {
   private readonly _baseUserAgent: string;
   private readonly _cacheFilePath: string;
   private readonly _liveData: boolean;
+  private readonly _bandsintownArtists: readonly BandsintownArtistConfig[];
+  private readonly _bandsintownBySlug: ReadonlyMap<string, BandsintownArtistConfig>;
 
   private constructor(
     contactEmail: string,
@@ -17,7 +24,8 @@ export class AppConfiguration {
     defaultUsername: string | undefined,
     baseUserAgent: string,
     cacheFilePath: string,
-    liveData: boolean
+    liveData: boolean,
+    bandsintownArtists: BandsintownArtistConfig[]
   ) {
     this._contactEmail = contactEmail;
     this._port = port;
@@ -25,6 +33,10 @@ export class AppConfiguration {
     this._baseUserAgent = baseUserAgent;
     this._cacheFilePath = cacheFilePath;
     this._liveData = liveData;
+    this._bandsintownArtists = bandsintownArtists;
+    this._bandsintownBySlug = new Map(
+      bandsintownArtists.map((a) => [a.slug, a])
+    );
   }
 
   /** Contact email for the Last.fm User-Agent (required; validated by the scraper package). */
@@ -57,6 +69,18 @@ export class AppConfiguration {
     return this._liveData;
   }
 
+  /** Configured Bandsintown artist feeds (empty when BANDSINTOWN_ARTISTS is unset). */
+  public get bandsintownArtists(): readonly BandsintownArtistConfig[] {
+    return this._bandsintownArtists;
+  }
+
+  /** Resolves a Bandsintown feed by ICS slug, or undefined if not configured. */
+  public getBandsintownArtistBySlug(
+    slug: string
+  ): BandsintownArtistConfig | undefined {
+    return this._bandsintownBySlug.get(slug);
+  }
+
   /**
    * Loads configuration from environment variables.
    * @throws Error if CONTACT_EMAIL is missing.
@@ -77,13 +101,18 @@ export class AppConfiguration {
     const baseUserAgent =
       process.env.LASTFM_SCRAPER_UA || "lastfm-events-ical/1.0";
 
+    const bandsintownArtists = parseBandsintownArtists(
+      process.env.BANDSINTOWN_ARTISTS
+    );
+
     return new AppConfiguration(
       contactEmail,
       Number.isFinite(port) ? port : 3000,
       process.env.LASTFM_USERNAME || undefined,
       baseUserAgent,
       process.env.CACHE_FILE_PATH || "/data/events-cache.json",
-      liveData
+      liveData,
+      bandsintownArtists
     );
   }
 }

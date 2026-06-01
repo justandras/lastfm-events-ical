@@ -8,6 +8,7 @@ import {
   LastFmEventsScraper,
   LastFmHtmlFetcher,
 } from "lastfm-events-scraper";
+import { BandsintownEventsClient } from "bandsintown-events-client";
 import { BackgroundScrapeScheduler } from "./BackgroundScrapeScheduler";
 
 /**
@@ -30,10 +31,22 @@ export class LastFmEventsIcal {
 
     const fetcher = new LastFmHtmlFetcher(config.contactEmail, config.baseUserAgent);
     const scraper = new LastFmEventsScraper(fetcher);
+    const bandsintownClient =
+      config.bandsintownArtists.length > 0
+        ? new BandsintownEventsClient()
+        : null;
     const cache = new EventCache(config, logger);
     const icalBuilder = new IcalFeedBuilder();
-    const scrapeScheduler = new BackgroundScrapeScheduler(config, scraper,cache,logger)
-    const server = new CalendarServer(config, cache, scraper, icalBuilder, scrapeScheduler, logger);
+    const scrapeScheduler = new BackgroundScrapeScheduler(config, scraper, cache, logger);
+    const server = new CalendarServer(
+      config,
+      cache,
+      scraper,
+      icalBuilder,
+      scrapeScheduler,
+      logger,
+      bandsintownClient
+    );
 
     await server.start();
   }

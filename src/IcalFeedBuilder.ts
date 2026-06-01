@@ -3,6 +3,7 @@ import { ILastFmEvent } from './ILastFmEvent'
 import { EventIdHelper } from './EventIdHelper'
 import { LastFmHtmlFetcher } from 'lastfm-events-scraper'
 import { IcsTimeZone } from './IcsTimeZone'
+import { IcalFeedOptions } from './IcalFeedOptions'
 
 const MAX_TITLE_LEN = 500
 const MAX_DESCRIPTION_LEN = 4000
@@ -23,9 +24,16 @@ export class IcalFeedBuilder {
 	 * Builds a single calendar feed string from the given events.
 	 * @param events - Events to include (those without startsAt are skipped).
 	 * @param calendarName - Optional calendar name in the ICS header.
+	 * @param options - UID prefix, URL allowlist, and related feed options.
 	 */
-	public build(events: ILastFmEvent[], calendarName: string = 'Last.fm Events'): string {
-		const icsEvents = events.map((e) => this.toIcsEvent(e)).filter((e): e is EventAttributes => e !== null)
+	public build(
+		events: ILastFmEvent[],
+		calendarName: string = 'Last.fm Events',
+		options?: IcalFeedOptions
+	): string {
+		const icsEvents = events
+			.map((e) => this.toIcsEvent(e, options))
+			.filter((e): e is EventAttributes => e !== null)
 
 		const { error, value } = createEvents(icsEvents, { calName: calendarName })
 		if (error || !value) {
@@ -34,8 +42,21 @@ export class IcalFeedBuilder {
 		return this._timeZone.injectIntoCalendar(value)
 	}
 
-	private toIcsEvent(event: ILastFmEvent): EventAttributes | null {
+	private toIcsEvent(
+		event: ILastFmEvent,
+		options?: IcalFeedOptions
+	): EventAttributes | null {
 		if (!event.startsAt) return null
+
+		const uidPrefix = options?.uidPrefix ?? 'LASTFM-ICAL'
+		const stableEventIds = options?.stableEventIds ?? true
+		const isAllowedEventUrl =
+			options?.isAllowedEventUrl ?? LastFmHtmlFetcher.isAllowedUrl
+		const productId = options?.productId ?? 'lastfm-events-ical'
+
+		const eventId = stableEventIds
+			? EventIdHelper.getStableEventId(event.id)
+			: event.id
 
 		const start = event.startsAt
 		const startArray: [number, number, number, number, number] = [
@@ -46,7 +67,7 @@ export class IcalFeedBuilder {
 			start.getMinutes(),
 		]
 
-		const safeUrl = this.safeEventUrl(event.url)
+		const safeUrl = this.safeEventUrl(event.url, isAllowedEventUrl)
 		const safeVenueWebsite = this.safeVenueWebsite(event.venueWebsite)
 		const descriptionLines: string[] = []
 		if (safeUrl) descriptionLines.push(`${safeUrl}`)
@@ -57,7 +78,7 @@ export class IcalFeedBuilder {
 		const description = descriptionLines.join('\n')
 
 		return {
-			uid: `LASTFM-ICAL-${EventIdHelper.getStableEventId(event.id)}`,
+			uid: `${uidPrefix}-${eventId}`,
 			title: this.truncate(event.title, MAX_TITLE_LEN),
 			start: startArray,
 			startInputType: 'local',
@@ -66,7 +87,7 @@ export class IcalFeedBuilder {
 			description: description || undefined,
 			location: event.location ? this.truncate(event.location, MAX_LOCATION_LEN) : undefined,
 			url: safeUrl || undefined,
-			productId: 'lastfm-events-ical',
+			productId,
 		}
 	}
 
@@ -74,8 +95,11 @@ export class IcalFeedBuilder {
 		return s.length <= max ? s : s.slice(0, max - 3) + '...'
 	}
 
-	private safeEventUrl(url: string): string {
-		return LastFmHtmlFetcher.isAllowedUrl(url) ? url : ''
+	private safeEventUrl(
+		url: string,
+		isAllowed: (url: string) => boolean
+	): string {
+		return isAllowed(url) ? url : ''
 	}
 
 	private safeVenueWebsite(url: string | undefined): string {

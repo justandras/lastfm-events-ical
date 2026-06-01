@@ -7,17 +7,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:scraper && tsc",
+    "build": "npm run build:scraper && npm run build:bandsintown && tsc",
     "build:scraper": "npm run build --prefix packages/lastfm-scraper",
-    "postinstall": "cd packages/lastfm-scraper && npm install && npm run build",
+    "build:bandsintown": "npm run build --prefix packages/bandsintown-client",
+    "postinstall": "npm run postinstall:packages",
+    "postinstall:packages": "cd packages/lastfm-scraper && npm install && npm run build && cd ../bandsintown-client && npm install && npm run build",
     "start": "node dist/index.js",
-    "dev": "TS_NODE_PROJECT=tsconfig.test.json NODE_ENV=development ts-node-dev --respawn --transpile-only -r tsconfig-paths/register --watch packages/lastfm-scraper/src src/index.ts",
+    "dev": "TS_NODE_PROJECT=tsconfig.test.json NODE_ENV=development ts-node-dev --respawn --transpile-only -r tsconfig-paths/register --watch packages/lastfm-scraper/src,packages/bandsintown-client/src,src src/index.ts",
     "dev:app": "NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p packages/lastfm-scraper/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json && tsc --noEmit -p packages/lastfm-scraper/tsconfig.json && tsc --noEmit -p packages/bandsintown-client/tsconfig.json",
     "check": "npm run lint && npm run typecheck"
   },
   "keywords": [
@@ -36,6 +38,7 @@
     "dotenv": "^16.5.0",
     "ics": "^3.8.1",
     "lastfm-events-scraper": "file:packages/lastfm-scraper",
+    "bandsintown-events-client": "file:packages/bandsintown-client",
     "pino": "^9.6.0"
   },
   "devDependencies": {
