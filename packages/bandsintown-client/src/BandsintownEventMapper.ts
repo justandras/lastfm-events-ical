@@ -11,6 +11,7 @@ export class BandsintownEventMapper {
     if (!id || !url) return null;
 
     const startsAt = this.parseDateTime(raw.starts_at ?? raw.datetime);
+    const endsAt = this.parseDateTime(raw.ends_at);
     const venue = raw.venue;
     const venueName = venue?.name?.trim();
     const city = venue?.city?.trim();
@@ -21,6 +22,7 @@ export class BandsintownEventMapper {
       title: this.resolveTitle(raw),
       url,
       startsAt,
+      endsAt,
       venue: venueName || undefined,
       city: city || undefined,
       country: country || undefined,

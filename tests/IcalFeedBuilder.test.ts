@@ -108,6 +108,51 @@ describe("IcalFeedBuilder", () => {
     expect(ics).not.toContain("evil.com");
   });
 
+  it("uses 4-hour duration when endsAt is missing", () => {
+    const events: ILastFmEvent[] = [
+      {
+        id: "1",
+        title: "E",
+        url: "https://www.last.fm/event/1",
+        startsAt: new Date(2026, 0, 1, 20, 0),
+      },
+    ];
+    const ics = builder.build(events);
+    expect(ics).toContain("DURATION:PT4H");
+    expect(ics).not.toMatch(/DTEND:\d{8}T\d{6}/);
+  });
+
+  it("uses DTEND when endsAt is after startsAt", () => {
+    const events: ILastFmEvent[] = [
+      {
+        id: "1",
+        title: "Festival",
+        url: "https://www.bandsintown.com/e/1",
+        startsAt: new Date(2026, 7, 13, 19, 0),
+        endsAt: new Date(2026, 7, 17, 23, 59),
+      },
+    ];
+    const ics = builder.build(events, "Example", {
+      isAllowedEventUrl: BandsintownJsonFetcher.isAllowedUrl,
+    });
+    expect(ics).toContain("DTEND:20260817T235900");
+    expect(ics).not.toContain("DURATION:");
+  });
+
+  it("falls back to 4-hour duration when endsAt is not after startsAt", () => {
+    const events: ILastFmEvent[] = [
+      {
+        id: "1",
+        title: "E",
+        url: "https://www.last.fm/event/1",
+        startsAt: new Date(2026, 0, 1, 20, 0),
+        endsAt: new Date(2026, 0, 1, 18, 0),
+      },
+    ];
+    const ics = builder.build(events);
+    expect(ics).toContain("DURATION:PT4H");
+  });
+
   it("uses custom uid prefix and allowlist for Bandsintown feeds", () => {
     const events: ILastFmEvent[] = [
       {

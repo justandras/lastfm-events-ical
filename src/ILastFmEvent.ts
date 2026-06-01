@@ -7,6 +7,7 @@ export interface ILastFmEvent {
   title: string;
   url: string;
   startsAt?: Date;
+  endsAt?: Date;
   venue?: string;
   venueWebsite?: string;
   city?: string;

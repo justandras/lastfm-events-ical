@@ -8,6 +8,17 @@ import { IcalFeedOptions } from './IcalFeedOptions'
 const MAX_TITLE_LEN = 500
 const MAX_DESCRIPTION_LEN = 4000
 const MAX_LOCATION_LEN = 500
+const DEFAULT_DURATION_HOURS = 4
+
+type DateTimeArray = [number, number, number, number, number]
+
+type IcsEventTiming =
+	| { duration: { hours: number } }
+	| {
+			end: DateTimeArray
+			endInputType: 'local'
+			endOutputType: 'local'
+	  }
 
 /**
  * Builds iCalendar (ICS) feed content from Last.fm events.
@@ -58,14 +69,8 @@ export class IcalFeedBuilder {
 			? EventIdHelper.getStableEventId(event.id)
 			: event.id
 
-		const start = event.startsAt
-		const startArray: [number, number, number, number, number] = [
-			start.getFullYear(),
-			start.getMonth() + 1,
-			start.getDate(),
-			start.getHours(),
-			start.getMinutes(),
-		]
+		const startArray = this.toDateTimeArray(event.startsAt)
+		const timing = this.resolveEventTiming(event.startsAt, event.endsAt)
 
 		const safeUrl = this.safeEventUrl(event.url, isAllowedEventUrl)
 		const safeVenueWebsite = this.safeVenueWebsite(event.venueWebsite)
@@ -83,12 +88,33 @@ export class IcalFeedBuilder {
 			start: startArray,
 			startInputType: 'local',
 			startOutputType: 'local',
-			duration: { hours: 4 },
+			...timing,
 			description: description || undefined,
 			location: event.location ? this.truncate(event.location, MAX_LOCATION_LEN) : undefined,
 			url: safeUrl || undefined,
 			productId,
 		}
+	}
+
+	private toDateTimeArray(date: Date): DateTimeArray {
+		return [
+			date.getFullYear(),
+			date.getMonth() + 1,
+			date.getDate(),
+			date.getHours(),
+			date.getMinutes(),
+		]
+	}
+
+	private resolveEventTiming(startsAt: Date, endsAt?: Date): IcsEventTiming {
+		if (endsAt && endsAt.getTime() > startsAt.getTime()) {
+			return {
+				end: this.toDateTimeArray(endsAt),
+				endInputType: 'local',
+				endOutputType: 'local',
+			}
+		}
+		return { duration: { hours: DEFAULT_DURATION_HOURS } }
 	}
 
 	private truncate(s: string, max: number): string {

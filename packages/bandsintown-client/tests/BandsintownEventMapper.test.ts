@@ -35,6 +35,20 @@ describe("BandsintownEventMapper", () => {
     expect(event!.id).toBe(EXAMPLE_EVENT_ID);
     expect(event!.url).toContain(`bandsintown.com/e/${EXAMPLE_EVENT_ID}`);
     expect(event!.startsAt).toEqual(new Date("2026-06-03T22:00:00"));
+    expect(event!.endsAt).toBeUndefined();
+  });
+
+  it("maps ends_at when present", () => {
+    const event = mapper.map({
+      ...sampleEvent,
+      ends_at: "2026-06-04T23:59:59",
+    });
+    expect(event!.endsAt).toEqual(new Date("2026-06-04T23:59:59"));
+  });
+
+  it("omits endsAt when ends_at is empty", () => {
+    const event = mapper.map({ ...sampleEvent, ends_at: "" });
+    expect(event!.endsAt).toBeUndefined();
   });
 
   it("uses venue name when title is empty", () => {

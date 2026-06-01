@@ -5,6 +5,7 @@ export interface BandsintownApiEvent {
   url?: string;
   starts_at?: string;
   datetime?: string;
+  ends_at?: string;
   sold_out?: boolean;
   lineup?: string[];
   venue?: {
