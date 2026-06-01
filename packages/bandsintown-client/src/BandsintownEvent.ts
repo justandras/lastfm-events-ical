@@ -11,6 +11,8 @@ export class BandsintownEvent {
   public readonly url: string;
   /** Start date/time when known. */
   public readonly startsAt?: Date;
+  /** End date/time when known. */
+  public readonly endsAt?: Date;
   /** Venue name when known. */
   public readonly venue?: string;
   /** City when known. */
@@ -27,6 +29,7 @@ export class BandsintownEvent {
     title: string;
     url: string;
     startsAt?: Date;
+    endsAt?: Date;
     venue?: string;
     city?: string;
     country?: string;
@@ -37,6 +40,7 @@ export class BandsintownEvent {
     this.title = args.title;
     this.url = args.url;
     this.startsAt = args.startsAt;
+    this.endsAt = args.endsAt;
     this.venue = args.venue;
     this.city = args.city;
     this.country = args.country;

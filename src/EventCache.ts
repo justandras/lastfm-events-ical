@@ -89,6 +89,10 @@ export class EventCache {
           const d = new Date(evt.startsAt);
           evt.startsAt = Number.isNaN(d.getTime()) ? undefined : d;
         }
+        if (typeof evt.endsAt === "string") {
+          const d = new Date(evt.endsAt);
+          evt.endsAt = Number.isNaN(d.getTime()) ? undefined : d;
+        }
       }
       return parsed;
     } catch (error: unknown) {
@@ -111,11 +115,13 @@ export class EventCache {
     }
   }
 
-  private normalizeEvent(evt: ILastFmEvent & { startsAt?: unknown }): ILastFmEvent {
+  private normalizeEvent(
+    evt: ILastFmEvent & { startsAt?: unknown; endsAt?: unknown }
+  ): ILastFmEvent {
     return {
       ...evt,
-      startsAt:
-        evt.startsAt instanceof Date ? evt.startsAt : undefined,
+      startsAt: evt.startsAt instanceof Date ? evt.startsAt : undefined,
+      endsAt: evt.endsAt instanceof Date ? evt.endsAt : undefined,
     };
   }
 
