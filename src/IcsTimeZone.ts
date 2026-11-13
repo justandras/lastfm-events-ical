@@ -13,7 +13,7 @@ export class IcsTimeZone {
 
 	/**
 	 * Injects timezone information into an ICS string:
-	 * - Adds TZID parameter to DTSTART lines
+	 * - Adds TZID parameter to DTSTART and DTEND lines
 	 * - Adds X-WR-TIMEZONE header
 	 * - Adds VTIMEZONE block for the current system timezone
 	 */
@@ -24,13 +24,14 @@ export class IcsTimeZone {
 		// Keep line endings consistent with the `ics` library output.
 		const eol = ics.includes('\r\n') ? '\r\n' : '\n'
 
-		// For UTC-like zones, do not rewrite DTSTART to TZID form.
+		// For UTC-like zones, do not rewrite DTSTART/DTEND to TZID form.
 		// UTC is best represented as DTSTART:...Z (not DTSTART;TZID=UTC:...).
 		const isUtcLike = IcsTimeZone.isUtcLikeTzid(tzid)
 		const withTzidOnDtStart = isUtcLike
 			? ics
-			: // 1) Add TZID on DTSTART lines (local timestamps, no trailing Z).
-				ics.replace(/(^|\r?\n)DTSTART:/g, `$1DTSTART;TZID=${tzid}:`)
+			: // 1) Add TZID on DTSTART/DTEND lines (local timestamps, no trailing Z).
+				//    All-day lines (DTSTART;VALUE=DATE:...) have a parameter and are left alone.
+				ics.replace(/(^|\r?\n)(DTSTART|DTEND):/g, `$1$2;TZID=${tzid}:`)
 
 		// 2) Add X-WR-TIMEZONE + VTIMEZONE block once per calendar.
 		const vtimezone = this.buildVTimeZoneBlock(tzid, eol)

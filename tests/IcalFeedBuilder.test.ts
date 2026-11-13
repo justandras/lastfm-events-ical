@@ -135,7 +135,8 @@ describe("IcalFeedBuilder", () => {
     const ics = builder.build(events, "Example", {
       isAllowedEventUrl: BandsintownJsonFetcher.isAllowedUrl,
     });
-    expect(ics).toContain("DTEND:20260817T235900");
+    expect(ics).toContain("DTSTART;TZID=Europe/Berlin:20260813T190000");
+    expect(ics).toContain("DTEND;TZID=Europe/Berlin:20260817T235900");
     expect(ics).not.toContain("DURATION:");
   });
 
