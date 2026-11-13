@@ -36,15 +36,17 @@ export class EventDetailParser {
 		if (!title) return null
 
 		const startsAt = this.parseStartDate($)
+		const endsAt = this.parseEndDate($, startsAt)
 		const { venue, venueWebsite, city, country, location, description } = this.parseLocationAndDescription($)
 
-		const id = this.extractEventIdFromUrl(pageUrl)
+		const id = EventDetailParser.extractEventIdFromUrl(pageUrl)
 
 		return new LastFmEvent({
 			id,
 			title,
 			url: pageUrl,
 			startsAt,
+			endsAt,
 			venue: venue || undefined,
 			venueWebsite: venueWebsite || undefined,
 			city: city || undefined,
@@ -61,7 +63,33 @@ export class EventDetailParser {
 			const parsed = new Date(datetimeAttr)
 			if (!Number.isNaN(parsed.getTime())) return parsed
 		}
-		return this.parseDateFromPageText($)
+		// Text first: regular events carry the real time ("at 9:00pm") only in the text,
+		// while their itemprop startDate is always midnight. Festivals have no time in the text.
+		return this.parseDateFromPageText($) ?? this.parseItempropDate($, 'startDate')
+	}
+
+	/**
+	 * Parses the end date from itemprop="endDate" (present on multi-day festival pages).
+	 * Last.fm marks the last day as e.g. "2027-07-26T00:00:01", meaning "through 26 July";
+	 * a near-midnight end is moved to the start of the next day so the last day is included.
+	 */
+	private parseEndDate($: cheerio.CheerioAPI, startsAt: Date | undefined): Date | undefined {
+		const end = this.parseItempropDate($, 'endDate')
+		if (!end) return undefined
+		if (end.getHours() === 0 && end.getMinutes() === 0) {
+			end.setDate(end.getDate() + 1)
+			end.setSeconds(0, 0)
+		}
+		if (startsAt && end.getTime() <= startsAt.getTime()) return undefined
+		return end
+	}
+
+	/** Reads a schema.org date from an itemprop element's content attribute (local time when no offset). */
+	private parseItempropDate($: cheerio.CheerioAPI, prop: 'startDate' | 'endDate'): Date | undefined {
+		const content = $(`[itemprop="${prop}"][content]`).first().attr('content')?.trim()
+		if (!content) return undefined
+		const parsed = new Date(content)
+		return Number.isNaN(parsed.getTime()) ? undefined : parsed
 	}
 
 	private parseDateFromPageText($: cheerio.CheerioAPI): Date | undefined {
@@ -240,8 +268,9 @@ export class EventDetailParser {
 			.trim()
 	}
 
-	private extractEventIdFromUrl(url: string): string {
-		const match = url.match(/\/event\/([^/]+)/)
+	/** Returns the id+slug path segment of an event or festival URL (the URL itself if none). */
+	public static extractEventIdFromUrl(url: string): string {
+		const match = url.match(/\/(?:event|festival)\/([^/]+)/)
 		return match?.[1] ?? url
 	}
 }

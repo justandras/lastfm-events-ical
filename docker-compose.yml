@@ -28,6 +28,10 @@ services:
       # Optional: override the User-Agent; email is always appended
       # LASTFM_SCRAPER_UA: lastfm-events-ical/1.0
 
+      # Optional: logged-in Last.fm session cookie ("sessionid" value) if anonymous requests get 503.
+      # Credential: prefer an env_file or secret over putting it here.
+      # LASTFM_SESSION_COOKIE: ""
+
       # Optional: log level (default info)
       # LOG_LEVEL: info
 

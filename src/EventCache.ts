@@ -53,6 +53,7 @@ export class EventCache {
       if (!isFutureOrCurrent) continue;
 
       const key = EventIdHelper.getStableEventId(event.id);
+      if (event.incomplete && this.isCompleteEntry(existing[key]?.event)) continue;
       existing[key] = {
         event: event as ILastFmEvent & { startsAt?: unknown },
         updatedAt: now.toISOString(),
@@ -113,6 +114,14 @@ export class EventCache {
     } catch (error) {
       this._logger.warn({ err: error, cachePath }, "Failed to write cache file");
     }
+  }
+
+  /**
+   * Whether a cached event has full details worth keeping over an incomplete fallback.
+   * Entries without a start date (e.g. a bot-challenge page cached by older versions) don't count.
+   */
+  private isCompleteEntry(evt: (ILastFmEvent & { startsAt?: unknown }) | undefined): boolean {
+    return !!evt && !evt.incomplete && evt.startsAt instanceof Date;
   }
 
   private normalizeEvent(

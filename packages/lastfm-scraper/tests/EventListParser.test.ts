@@ -4,6 +4,40 @@ import { LastFmHtmlFetcher } from "../src/LastFmHtmlFetcher";
 
 const isAllowedUrl = (url: string) => LastFmHtmlFetcher.isAllowedUrl(url);
 
+// Trimmed from a real Last.fm user events page row.
+const listRowHtml = `
+  <table><tbody>
+    <tr class="events-list-item js-link-block">
+      <td class="events-list-item-art">
+        <time datetime="2026-12-04T00:00:00" class="calendar-icon">Dec 4</time>
+      </td>
+      <td class="events-list-item-event">
+        <div class="events-list-item-event--title">
+          <a href="/event/5076218+Aura+at+fi+w%2F+SHDW+all+night+long" class="link-block-target">
+            Aura at fi w/ SHDW all night long
+          </a>
+        </div>
+        <div class="events-list-item-event--lineup">
+          SHDW,
+          Gutkind,
+          Szunflower
+        </div>
+        <a href="/event/5076218+Aura+at+fi+w%2F+SHDW+all+night+long" class="events-list-cover-link"></a>
+      </td>
+      <td class="events-list-item-venue">
+        <div class="events-list-item-venue--title">Ursprung Fi</div>
+        <div class="events-list-item-venue--address">
+          <div class="events-list-item-venue--city">Köln</div>
+          <div class="events-list-item-venue--country">Germany</div>
+        </div>
+      </td>
+      <td class="events-list-item-attendees">
+        <a href="/event/5076218+Aura+at+fi+w%2F+SHDW+all+night+long/attendance">1 going</a>
+      </td>
+    </tr>
+  </tbody></table>
+`;
+
 describe("EventListParser", () => {
   const parser = new EventListParser();
 
@@ -76,5 +110,40 @@ describe("EventListParser", () => {
     const html = `<a href="/event/99+Custom">E</a>`;
     const urls = customParser.parse(html, isAllowedUrl);
     expect(urls[0]).toBe("https://last.fm/event/99+Custom");
+  });
+
+  it("extracts festival links and excludes festival attendance links", () => {
+    const html = `
+      <a href="/event/5056021+Liquicity+Heidelberg">Event</a>
+      <a href="/festival/5068797+Liquicity+Festival+2027">Festival</a>
+      <a href="https://www.last.fm/festival/5068797+Liquicity+Festival+2027">Again</a>
+      <a href="/festival/5068797+Liquicity+Festival+2027/attendance">Attend</a>
+    `;
+    const urls = parser.parse(html, isAllowedUrl);
+    expect(urls).toEqual([
+      "https://www.last.fm/event/5056021+Liquicity+Heidelberg",
+      "https://www.last.fm/festival/5068797+Liquicity+Festival+2027",
+    ]);
+  });
+
+  describe("parseItems", () => {
+    it("extracts title, date, venue and lineup from event rows", () => {
+      expect(parser.parseItems(listRowHtml, isAllowedUrl)).toEqual([
+        {
+          url: "https://www.last.fm/event/5076218+Aura+at+fi+w%2F+SHDW+all+night+long",
+          title: "Aura at fi w/ SHDW all night long",
+          date: new Date(2026, 11, 4),
+          venue: "Ursprung Fi",
+          city: "Köln",
+          country: "Germany",
+          lineup: ["SHDW", "Gutkind", "Szunflower"],
+        },
+      ]);
+    });
+
+    it("returns nothing for links outside event rows or disallowed URLs", () => {
+      expect(parser.parseItems('<a href="/event/1+X">X</a>', isAllowedUrl)).toEqual([]);
+      expect(parser.parseItems(listRowHtml, () => false)).toEqual([]);
+    });
   });
 });

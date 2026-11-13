@@ -29,8 +29,15 @@ export class LastFmEventsIcal {
       process.exit(1);
     }
 
-    const fetcher = new LastFmHtmlFetcher(config.contactEmail, config.baseUserAgent);
-    const scraper = new LastFmEventsScraper(fetcher);
+    const fetcher = new LastFmHtmlFetcher(
+      config.contactEmail,
+      config.baseUserAgent,
+      config.sessionCookie
+    );
+    const scraper = new LastFmEventsScraper(fetcher, undefined, undefined, undefined, {
+      onEventPageError: (url, err) =>
+        logger.warn({ err, url }, "Event page failed; using events list data (marked incomplete)"),
+    });
     const bandsintownClient =
       config.bandsintownArtists.length > 0
         ? new BandsintownEventsClient()

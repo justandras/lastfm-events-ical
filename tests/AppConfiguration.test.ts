@@ -78,6 +78,16 @@ describe("AppConfiguration", () => {
     expect(config.baseUserAgent).toBe("MyBot/1.0");
   });
 
+  it("loads LASTFM_SESSION_COOKIE trimmed, undefined when unset or blank", () => {
+    process.env.CONTACT_EMAIL = "a@b.co";
+    delete process.env.LASTFM_SESSION_COOKIE;
+    expect(AppConfiguration.load().sessionCookie).toBeUndefined();
+    process.env.LASTFM_SESSION_COOKIE = "   ";
+    expect(AppConfiguration.load().sessionCookie).toBeUndefined();
+    process.env.LASTFM_SESSION_COOKIE = "  abc123  ";
+    expect(AppConfiguration.load().sessionCookie).toBe("abc123");
+  });
+
   it("loads BANDSINTOWN_ARTISTS", () => {
     process.env.CONTACT_EMAIL = "a@b.co";
     process.env.BANDSINTOWN_ARTISTS =

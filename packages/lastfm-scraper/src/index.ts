@@ -7,6 +7,9 @@
 export { LastFmEvent } from "./LastFmEvent";
 export { IHtmlFetcher } from "./IHtmlFetcher";
 export { LastFmHtmlFetcher } from "./LastFmHtmlFetcher";
+export type { EventListItem } from "./EventListParser";
+export type { LastFmEventsScraperOptions } from "./LastFmEventsScraper";
+export type { LastFmHtmlFetcherOptions } from "./LastFmHtmlFetcher";
 export { ContactEmailValidator } from "./ContactEmailValidator";
 export { EventListParser } from "./EventListParser";
 export { EventDetailParser } from "./EventDetailParser";

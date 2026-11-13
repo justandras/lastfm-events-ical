@@ -9,8 +9,13 @@ const MAX_TITLE_LEN = 500
 const MAX_DESCRIPTION_LEN = 4000
 const MAX_LOCATION_LEN = 500
 const DEFAULT_DURATION_HOURS = 4
+const INCOMPLETE_TITLE_PREFIX = '[Incomplete] '
+const INCOMPLETE_NOTE =
+	"⚠ Incomplete: Last.fm's event page couldn't be loaded, so this event was built from your events list. " +
+	'The start time is unknown (shown as all-day) and details may be missing.'
 
 type DateTimeArray = [number, number, number, number, number]
+type DateArray = [number, number, number]
 
 type IcsEventTiming =
 	| { duration: { hours: number } }
@@ -69,12 +74,12 @@ export class IcalFeedBuilder {
 			? EventIdHelper.getStableEventId(event.id)
 			: event.id
 
-		const startArray = this.toDateTimeArray(event.startsAt)
-		const timing = this.resolveEventTiming(event.startsAt, event.endsAt)
+		const incomplete = event.incomplete === true
 
 		const safeUrl = this.safeEventUrl(event.url, isAllowedEventUrl)
 		const safeVenueWebsite = this.safeVenueWebsite(event.venueWebsite)
 		const descriptionLines: string[] = []
+		if (incomplete) descriptionLines.push(INCOMPLETE_NOTE, '')
 		if (safeUrl) descriptionLines.push(`${safeUrl}`)
 		if (safeUrl && safeVenueWebsite) descriptionLines.push(`Venue: ${safeVenueWebsite}`)
 		if (event.description) {
@@ -84,11 +89,15 @@ export class IcalFeedBuilder {
 
 		return {
 			uid: `${uidPrefix}-${eventId}`,
-			title: this.truncate(event.title, MAX_TITLE_LEN),
-			start: startArray,
-			startInputType: 'local',
-			startOutputType: 'local',
-			...timing,
+			title: this.truncate((incomplete ? INCOMPLETE_TITLE_PREFIX : '') + event.title, MAX_TITLE_LEN),
+			...(incomplete
+				? this.allDayTiming(event.startsAt)
+				: {
+						start: this.toDateTimeArray(event.startsAt),
+						startInputType: 'local' as const,
+						startOutputType: 'local' as const,
+						...this.resolveEventTiming(event.startsAt, event.endsAt),
+					}),
 			description: description || undefined,
 			location: event.location ? this.truncate(event.location, MAX_LOCATION_LEN) : undefined,
 			url: safeUrl || undefined,
@@ -104,6 +113,15 @@ export class IcalFeedBuilder {
 			date.getHours(),
 			date.getMinutes(),
 		]
+	}
+
+	/** Single all-day event on the start date (used when the start time is unknown). */
+	private allDayTiming(startsAt: Date): { start: DateArray; end: DateArray } {
+		const next = new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 1)
+		return {
+			start: [startsAt.getFullYear(), startsAt.getMonth() + 1, startsAt.getDate()],
+			end: [next.getFullYear(), next.getMonth() + 1, next.getDate()],
+		}
 	}
 
 	private resolveEventTiming(startsAt: Date, endsAt?: Date): IcsEventTiming {

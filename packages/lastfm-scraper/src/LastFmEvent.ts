@@ -11,6 +11,8 @@ export class LastFmEvent {
   public readonly url: string;
   /** Start date/time when known. */
   public readonly startsAt?: Date;
+  /** End date/time when known (e.g. multi-day festivals). */
+  public readonly endsAt?: Date;
   /** Venue name when known. */
   public readonly venue?: string;
   /** Venue website URL when present on the event page. */
@@ -23,6 +25,11 @@ export class LastFmEvent {
   public readonly location?: string;
   /** Free-text description when available. */
   public readonly description?: string;
+  /**
+   * True when the event detail page could not be loaded and the event was built
+   * from the user's events list instead (no start time or description).
+   */
+  public readonly incomplete?: boolean;
 
   /**
    * Creates a new LastFmEvent.
@@ -33,22 +40,26 @@ export class LastFmEvent {
     title: string;
     url: string;
     startsAt?: Date;
+    endsAt?: Date;
     venue?: string;
     venueWebsite?: string;
     city?: string;
     country?: string;
     location?: string;
     description?: string;
+    incomplete?: boolean;
   }) {
     this.id = args.id;
     this.title = args.title;
     this.url = args.url;
     this.startsAt = args.startsAt;
+    this.endsAt = args.endsAt;
     this.venue = args.venue;
     this.venueWebsite = args.venueWebsite;
     this.city = args.city;
     this.country = args.country;
     this.location = args.location;
     this.description = args.description;
+    this.incomplete = args.incomplete;
   }
 }

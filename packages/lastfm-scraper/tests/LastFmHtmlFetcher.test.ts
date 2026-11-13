@@ -120,4 +120,83 @@ describe("LastFmHtmlFetcher", () => {
       );
     });
   });
+  describe("session cookie", () => {
+    const okResponse = () =>
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve("<html>ok</html>"),
+      });
+
+    const sentHeaders = (mockFetch: ReturnType<typeof vi.fn>) =>
+      mockFetch.mock.calls[0][1].headers as Record<string, string>;
+
+    it("sends no Cookie header when not configured", async () => {
+      const mockFetch = okResponse();
+      vi.stubGlobal("fetch", mockFetch);
+      const fetcher = new LastFmHtmlFetcher("test@example.com");
+      await fetcher.fetch("https://www.last.fm/event/1");
+      expect(fetcher.hasSessionCookie).toBe(false);
+      expect(sentHeaders(mockFetch)).not.toHaveProperty("Cookie");
+    });
+
+    it("ignores a blank cookie", () => {
+      expect(new LastFmHtmlFetcher("a@b.co", undefined, "   ").hasSessionCookie).toBe(false);
+    });
+
+    it("wraps a bare value as sessionid", async () => {
+      const mockFetch = okResponse();
+      vi.stubGlobal("fetch", mockFetch);
+      const fetcher = new LastFmHtmlFetcher("a@b.co", undefined, " abc123 ");
+      await fetcher.fetch("https://www.last.fm/event/1");
+      expect(fetcher.hasSessionCookie).toBe(true);
+      expect(sentHeaders(mockFetch).Cookie).toBe("sessionid=abc123");
+    });
+
+    it("uses a full Cookie header string as-is", async () => {
+      const mockFetch = okResponse();
+      vi.stubGlobal("fetch", mockFetch);
+      const fetcher = new LastFmHtmlFetcher("a@b.co", undefined, "sessionid=abc; csrftoken=xyz");
+      await fetcher.fetch("https://www.last.fm/event/1");
+      expect(sentHeaders(mockFetch).Cookie).toBe("sessionid=abc; csrftoken=xyz");
+    });
+
+    it("rejects cookies with line breaks", () => {
+      expect(() => new LastFmHtmlFetcher("a@b.co", undefined, "abc\r\nX-Evil: 1")).toThrow(/line breaks/);
+    });
+
+    it("never sends the cookie to disallowed hosts", async () => {
+      const mockFetch = okResponse();
+      vi.stubGlobal("fetch", mockFetch);
+      const fetcher = new LastFmHtmlFetcher("a@b.co", undefined, "abc");
+      await expect(fetcher.fetch("https://evil.com/")).rejects.toThrow();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("hints at an expired cookie on 503 when configured", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: "Service Unavailable" }));
+      const fetcher = new LastFmHtmlFetcher("a@b.co", undefined, "abc");
+      await expect(fetcher.fetch("https://www.last.fm/event/1")).rejects.toThrow(/session cookie may have expired/);
+    });
+
+    it("suggests a cookie on 503 when not configured", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: "Service Unavailable" }));
+      const fetcher = new LastFmHtmlFetcher("a@b.co");
+      await expect(fetcher.fetch("https://www.last.fm/event/1")).rejects.toThrow(/consider configuring a session cookie/);
+    });
+
+    it("does not include the cookie value in error messages", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: "Service Unavailable" }));
+      const fetcher = new LastFmHtmlFetcher("a@b.co", undefined, "supersecret");
+      await expect(fetcher.fetch("https://www.last.fm/event/1")).rejects.not.toThrow(/supersecret/);
+    });
+  });
+
+  it("throws when Last.fm serves a bot challenge page with HTTP 200", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve("<html><head><title>Client Challenge</title></head></html>"),
+    }));
+    const fetcher = new LastFmHtmlFetcher("a@b.co");
+    await expect(fetcher.fetch("https://www.last.fm/event/1")).rejects.toThrow(/bot challenge/);
+  });
 });

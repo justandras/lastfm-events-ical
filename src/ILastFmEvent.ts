@@ -14,4 +14,6 @@ export interface ILastFmEvent {
   country?: string;
   location?: string;
   description?: string;
+  /** True when built from the events list because the event page could not be loaded. */
+  incomplete?: boolean;
 }

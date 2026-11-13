@@ -17,6 +17,7 @@ The iCal entries include:
 - **`LASTFM_USERNAME`**: Last.fm username whose events will be exposed.
 - **`PORT`**: HTTP port (default `3000`).
 - **`LASTFM_SCRAPER_UA`**: Optional override for the User-Agent; if unset, the default uses `CONTACT_EMAIL`.
+- **`LASTFM_SESSION_COOKIE`**: Optional logged-in Last.fm session, sent as a cookie on every Last.fm request. Use it when Last.fm blocks anonymous requests (e.g. HTTP 503 on your events page while logged out). In a logged-in browser, open DevTools → Application → Cookies → `https://www.last.fm` and copy the `sessionid` value; a full `Cookie` header string also works. Treat it as a credential: it grants access to your Last.fm account. It expires when you log out or the session times out; failed fetches then mention that the cookie may have expired.
 - **`CACHE_FILE_PATH`**: Path to the JSON cache file. Defaults to `/data/events-cache.json`.
 - **`BANDSINTOWN_ARTISTS`**: Optional JSON array of Bandsintown feeds. Each entry needs `slug` (ICS URL path), `artist` (Bandsintown artist name), and `appId` (per-artist API key from Bandsintown). Example: `[{"slug":"desired-slug","artist":"artist name from api url","appId":"your app ID"}]`. Feeds are fetched live on each request (no cache). Treat `appId` as a credential.
 

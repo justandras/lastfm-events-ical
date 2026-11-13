@@ -129,4 +129,42 @@ describe("EventCache", () => {
     expect(events[0].startsAt).toBeInstanceOf(Date);
     expect(events[0].startsAt!.getFullYear()).toBe(2026);
   });
+
+  describe("incomplete events", () => {
+    const now = new Date(2026, 0, 1);
+    const complete: ILastFmEvent = {
+      id: "5076218+Aura",
+      title: "Aura (full)",
+      url: "https://www.last.fm/event/5076218+Aura",
+      startsAt: new Date(2026, 11, 4, 22, 0),
+    };
+    const incomplete: ILastFmEvent = {
+      id: "5076218+Aura",
+      title: "Aura (from list)",
+      url: "https://www.last.fm/event/5076218+Aura",
+      startsAt: new Date(2026, 11, 4),
+      incomplete: true,
+    };
+
+    it("keeps a complete cached event instead of an incomplete fallback", async () => {
+      await cache.mergeAndPersist([complete], now);
+      const events = await cache.mergeAndPersist([incomplete], now);
+      expect(events).toHaveLength(1);
+      expect(events[0].title).toBe("Aura (full)");
+    });
+
+    it("replaces a cached event that has no start date (e.g. a cached challenge page)", async () => {
+      await cache.mergeAndPersist([{ id: "5076218+Aura", title: "Client Challenge", url: complete.url }], now);
+      const events = await cache.mergeAndPersist([incomplete], now);
+      expect(events[0].title).toBe("Aura (from list)");
+      expect(events[0].incomplete).toBe(true);
+    });
+
+    it("replaces an incomplete cached event with a complete one", async () => {
+      await cache.mergeAndPersist([incomplete], now);
+      const events = await cache.mergeAndPersist([complete], now);
+      expect(events[0].title).toBe("Aura (full)");
+      expect(events[0].incomplete).toBeUndefined();
+    });
+  });
 });

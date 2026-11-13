@@ -32,13 +32,17 @@ export class LastFmEventsIcal {
     try {
       fetcher = await LastFmHtmlFetcher.create(config.contactEmail, {
         baseUserAgent: config.baseUserAgent,
+        sessionCookie: config.sessionCookie,
       });
     } catch (err) {
       logger.fatal({ err }, err instanceof Error ? err.message : String(err));
       process.exit(1);
     }
 
-    const scraper = new LastFmEventsScraper(fetcher);
+    const scraper = new LastFmEventsScraper(fetcher, undefined, undefined, undefined, {
+      onEventPageError: (url, err) =>
+        logger.warn({ err, url }, "Event page failed; using events list data (marked incomplete)"),
+    });
     const cache = new EventCache(config, logger);
     const icalBuilder = new IcalFeedBuilder();
     const scrapeScheduler = new BackgroundScrapeScheduler(

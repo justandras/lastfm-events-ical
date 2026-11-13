@@ -39,11 +39,19 @@ Or construct the fetcher directly (no validation; use when email was already val
 const fetcher = new LastFmHtmlFetcher("you@example.com", "MyApp/1.0");
 ```
 
+If Last.fm blocks anonymous requests, pass a logged-in session cookie (the `sessionid` value, or a full Cookie header string). It is only ever sent to last.fm hosts:
+
+```typescript
+const fetcher = await LastFmHtmlFetcher.create("you@example.com", {
+  sessionCookie: process.env.LASTFM_SESSION_COOKIE,
+});
+```
+
 ## API
 
 - **`LastFmEvent`** – Immutable event DTO (id, title, url, startsAt, venue, location, description, etc.).
 - **`IHtmlFetcher`** – Interface for fetching HTML by URL (e.g. for testing or custom SSRF policy).
-- **`LastFmHtmlFetcher`** – Fetches only `http(s)://www.last.fm` and `last.fm`. Builds User-Agent from contact email (always appends `(+mailto:email)`). **`create(contactEmail, options?)`** – async; validates email (format + MX) then returns a fetcher. **Constructor(contactEmail, baseUserAgent?)** – sync; use when email is already validated.
+- **`LastFmHtmlFetcher`** – Fetches only `http(s)://www.last.fm` and `last.fm`. Builds User-Agent from contact email (always appends `(+mailto:email)`). **`create(contactEmail, options?)`** – async; validates email (format + MX) then returns a fetcher; options are `baseUserAgent` and `sessionCookie`. **Constructor(contactEmail, baseUserAgent?, sessionCookie?)** – sync; use when email is already validated.
 - **`ContactEmailValidator`** – **`validate(email)`** – async; validates format and MX so Last.fm can identify the scraper owner.
 - **`EventListParser`** – Parses a user events page HTML and returns event detail URLs.
 - **`EventDetailParser`** – Parses an event detail page HTML and returns a `LastFmEvent`.

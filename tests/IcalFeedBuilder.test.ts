@@ -172,4 +172,31 @@ describe("IcalFeedBuilder", () => {
     expect(ics).toContain("https://www.bandsintown.com/e/12345");
     expect(ics).not.toContain("LASTFM-ICAL");
   });
+
+  it("flags incomplete events in the title and description and makes them all-day", () => {
+    const ics = builder.build([
+      {
+        id: "5076218+Aura",
+        title: "Aura at fi w/ SHDW all night long",
+        url: "https://www.last.fm/event/5076218+Aura",
+        startsAt: new Date(2026, 11, 31),
+        description: "Lineup: SHDW",
+        incomplete: true,
+      },
+    ]);
+    const unfolded = ics.replace(/\r?\n[ \t]/g, "");
+    expect(unfolded).toContain("SUMMARY:[Incomplete] Aura at fi w/ SHDW all night long");
+    expect(unfolded).toMatch(/DESCRIPTION:⚠ Incomplete: Last\.fm's event page couldn't be loaded/);
+    expect(unfolded).toContain("Lineup: SHDW");
+    expect(unfolded).toContain("DTSTART;VALUE=DATE:20261231");
+    expect(unfolded).toContain("DTEND;VALUE=DATE:20270101");
+  });
+
+  it("does not flag complete events", () => {
+    const ics = builder.build([
+      { id: "1", title: "Concert", url: "https://www.last.fm/event/1", startsAt: new Date(2026, 5, 15, 19, 30) },
+    ]);
+    expect(ics).not.toContain("[Incomplete]");
+    expect(ics).not.toContain("VALUE=DATE:");
+  });
 });

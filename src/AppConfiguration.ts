@@ -5,7 +5,7 @@ import {
 
 /**
  * Application configuration loaded from environment variables.
- * Required: CONTACT_EMAIL. Optional: PORT, LASTFM_USERNAME, CACHE_FILE_PATH, LIVE_DATA, LASTFM_SCRAPER_UA, BANDSINTOWN_ARTISTS.
+ * Required: CONTACT_EMAIL. Optional: PORT, LASTFM_USERNAME, CACHE_FILE_PATH, LIVE_DATA, LASTFM_SCRAPER_UA, LASTFM_SESSION_COOKIE, BANDSINTOWN_ARTISTS.
  * User-Agent for scraping is built by the fetcher library from contact email and optional base.
  */
 export class AppConfiguration {
@@ -13,6 +13,7 @@ export class AppConfiguration {
   private readonly _port: number;
   private readonly _defaultUsername?: string;
   private readonly _baseUserAgent: string;
+  private readonly _sessionCookie?: string;
   private readonly _cacheFilePath: string;
   private readonly _liveData: boolean;
   private readonly _bandsintownArtists: readonly BandsintownArtistConfig[];
@@ -25,12 +26,14 @@ export class AppConfiguration {
     baseUserAgent: string,
     cacheFilePath: string,
     liveData: boolean,
-    bandsintownArtists: BandsintownArtistConfig[]
+    bandsintownArtists: BandsintownArtistConfig[],
+    sessionCookie?: string
   ) {
     this._contactEmail = contactEmail;
     this._port = port;
     this._defaultUsername = defaultUsername;
     this._baseUserAgent = baseUserAgent;
+    this._sessionCookie = sessionCookie;
     this._cacheFilePath = cacheFilePath;
     this._liveData = liveData;
     this._bandsintownArtists = bandsintownArtists;
@@ -57,6 +60,11 @@ export class AppConfiguration {
   /** Base User-Agent; the fetcher appends (+mailto:contactEmail). Default lastfm-events-ical/1.0. */
   public get baseUserAgent(): string {
     return this._baseUserAgent ?? "lastfm-events-ical/1.0";
+  }
+
+  /** Optional logged-in Last.fm session cookie (credential; never log it). */
+  public get sessionCookie(): string | undefined {
+    return this._sessionCookie;
   }
 
   /** Path to the JSON cache file. */
@@ -112,7 +120,8 @@ export class AppConfiguration {
       baseUserAgent,
       process.env.CACHE_FILE_PATH || "/data/events-cache.json",
       liveData,
-      bandsintownArtists
+      bandsintownArtists,
+      process.env.LASTFM_SESSION_COOKIE?.trim() || undefined
     );
   }
 }
